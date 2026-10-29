@@ -1,0 +1,406 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap');
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Root */
+
+:root {
+  --text-color: linear-gradient(
+    90deg,
+    rgba(10, 39, 82, 1) 0%,
+    rgba(27, 91, 151, 1) 50%,
+    rgba(0, 195, 230, 1) 100%
+  );
+}
+
+.bg-gradient {
+  background: #1B5B97;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 39, 82, 1) 0%,
+    rgba(27, 91, 151, 1) 50%,
+    rgba(0, 195, 230, 1) 100%
+  );
+}
+
+.text-gradient {
+  background: var(--text-color);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text; /* For non-WebKit browsers */
+}
+
+.text-gradient-underline {
+  background: var(--text-color);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+
+.text-gradient-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  margin-bottom: 2px;
+  height: 2px;
+  /* Underline thickness */
+  width: 100%;
+  background: var(--text-color);
+  /* Same gradient */
+  border-radius: 2px;
+}
+
+body {
+  top: 0px !important;
+}
+
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+.skiptranslate iframe {
+  display: none !important;
+}
+/* Hide Google branding (optional) */
+.goog-logo-link {
+  display: none !important;
+}
+
+.goog-te-gadget span {
+  display: none !important;
+}
+
+.goog-te-gadget {
+  font-size: 0px;
+}
+
+/* Hide default Google Translate dropdown; we use our own UI */
+.goog-te-combo {
+  display: none !important;
+}
+
+.goog-te-gadget select {
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+
+    font-family: 'Outfit', sans-serif;
+}
+
+
+
+.bg-gray-custom {
+    background-color: var(--gray-custom);
+}
+
+.bg--blue {
+    background: var(--blue);
+}
+
+.color--blue {
+    color: var(--blue);
+}
+
+.hover--outline:hover {
+    outline-color: var(--blue);
+}
+
+.container {
+    max-width: 1500px;
+}
+
+.navbar a:not(:last-child):hover::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--blue);
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    transition: width 0.5s ease;
+}
+
+h2 {
+    font-size: clamp(25px, 2vw, 36px);
+}
+
+h3 {
+    font-size: clamp(20px, 2vw, 24px);
+    color: #ffffff;
+}
+
+p {
+    color: #ffffff;
+
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a {
+    font-family: 'Outfit', sans-serif;
+}
+
+.react-datepicker-wrapper {
+    width: 100%;
+}
+
+.react-datepicker__tab-loop {
+    position: absolute;
+}
+
+.react-datepicker-popper {
+    animation: growDown 300ms ease-in-out forwards;
+    transform-origin: top center;
+    border: 0;
+    border-radius: 10px;
+}
+
+.warning-alert {
+    color: #000000;
+    background-color: #ffff;
+    border: 1px solid var(--blue);
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.warning-alert>a {
+    color: red;
+}
+
+.divbg {
+    background-image: url("/images/car.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 100vw;
+    /* Full width of viewport */
+    height: 50vh;
+    /* Adjust height as needed */
+    max-width: 100%;
+    /* Prevent overflow */
+}
+
+.toggle--menu>div {
+    transition: 0.3s;
+}
+
+.active-toggle>div:nth-child(2) {
+    opacity: 0;
+}
+
+.active-toggle>div:first-child {
+    transform: translateY(6px) rotate(45deg);
+}
+
+.active-toggle>div:last-child {
+    transform: translateY(-6px) rotate(-45deg);
+}
+
+.loaderHolder {
+    position: fixed;
+    z-index: 999;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    background: #0000006b;
+}
+
+.loaderHolder>.loaderMain {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.main--menu--navigation>a {
+    position: relative;
+}
+
+.main--menu--navigation>a:after {
+    content: '';
+    width: 100%;
+    height: 1px;
+    background: #fff;
+    display: block;
+    position: absolute;
+    bottom: -10px;
+    left: 0px;
+    opacity: 0;
+    transition: 0.3s;
+}
+
+.main--menu--navigation>a:last-child:after {
+    display: none;
+}
+
+.main--menu--navigation>a:hover:after {
+    bottom: 0;
+    opacity: 1;
+}
+
+select.selectcustom option[value=""],
+select.selectcustom option:not([value]) {
+    color: #B0B0B0;
+}
+
+select.selectcustom option {
+    color: #000;
+}
+
+select.selectcustom:invalid {
+
+    color: #B0B0B0;
+}
+
+.bookingform input::placeholder {
+    color: #B0B0B0;
+}
+
+select.selectcustom option:hover {
+    box-shadow: 0 0 10px 100px #000000 inset;
+}
+
+.selectcustom button {
+    padding: 12px;
+    font-size: 15px;
+    height: 48px;
+    border-radius: 5px;
+    background: #fff;
+}
+
+.selectcustom button>div>span {
+    color: #B0B0B0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.selectcustom button:hover {
+    background: #fff;
+}
+
+.selectcustom button>div>.text-danger {
+    color: #750303 !important;
+}
+
+.selectcustom button>div>span.\!text-danger {
+    color: #B0B0B0 !important;
+}
+
+.selectcustom .text-danger {
+    color: var(--blue);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-none {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+
+@media(max-width: 1023px) {
+    .main--menu--navigation>a {
+        padding: 10px 0px;
+        margin-top: 0px !important;
+    }
+
+    .main--menu--navigation>a:last-child {
+        margin-top: 20px !important;
+    }
+
+    .main--menu--navigation {
+        z-index: -1;
+    }
+}
+
+@media(max-width: 639px) {
+    .mobile--items {
+        position: fixed;
+        width: 100%;
+        top: 0px;
+        right: 0;
+        height: 100%;
+        background: #000000ad;
+        padding: 100px 20px;
+        z-index: 99;
+        margin-top: 0px;
+        overflow: auto;
+    }
+
+    .mobile--items>.close--item {
+        color: #fff;
+        background: #000;
+        width: 39px;
+        aspect-ratio: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #434343;
+        position: absolute;
+        top: 30px;
+        right: 10px;
+        z-index: 999;
+        border-radius: 50px;
+        font-size: 15px;
+    }
+
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-15px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+
+
+@media (min-width: 768px) and (max-width: 1440px) {
+    #services {
+        gap: 50px !important;
+       
+    }
+    .services-container{
+        width: 280px !important;
+    }
+
+}
