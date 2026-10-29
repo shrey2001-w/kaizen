@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
-
 type Car = {
   id: string;
   name: string;
@@ -23,33 +22,33 @@ const cars: Car[] = [
     passengers: 4,
     luggage: 5,
   },
-   {
-    id: 'Bolero2',
+  {
+    id: 'Ertiga',
     name: 'ERTIGA',
     description: 'ERTIGA',
     image: '/images/ertiga.jpeg',
     passengers: 4,
     luggage: 5,
   },
-   {
+  {
     id: 'Bolero',
     name: 'MAHINDRA BOLERO',
-    description: 'FORD_ESCAPE ',
+    description: 'MAHINDRA BOLERO',
     image: '/images/bolero.webp',
     passengers: 4,
     luggage: 5,
   },
-     {
-    id: 'WAGONR',
+  {
+    id: 'WagonR',
     name: 'WAGONR',
     description: 'WAGONR',
     image: '/images/wagonr.jpeg',
     passengers: 4,
     luggage: 5,
   },
-     {
+  {
     id: 'Innova',
-    name: 'Innova',
+    name: 'INNOVA',
     description: 'Innova',
     image: '/images/innova.jpeg',
     passengers: 4,
@@ -57,43 +56,40 @@ const cars: Car[] = [
   },
   {
     id: 'Swift',
-    name: 'Swift',
+    name: 'SWIFT',
     description: 'Swift',
     image: '/images/swift.jpeg',
     passengers: 4,
     luggage: 5,
   },
-    {
-    id: 'Swift',
-    name: 'Swift',
-    description: 'Swift',
+  {
+    id: 'HondaCity',
+    name: 'HONDA CITY',
+    description: 'Honda City',
     image: '/images/hondacity.jpeg',
     passengers: 4,
     luggage: 5,
   },
-    {
-    id: 'Swift',
-    name: 'Swift',
-    description: 'Swift',
+  {
+    id: 'Alto',
+    name: 'ALTO',
+    description: 'Alto',
     image: '/images/alto.jpeg',
     passengers: 4,
     luggage: 5,
   },
-    {
-    id: 'Swift',
-    name: 'Swift',
-    description: 'Swift',
+  {
+    id: 'Ignis',
+    name: 'IGNIS',
+    description: 'Ignis',
     image: '/images/ignis.jpeg',
     passengers: 4,
     luggage: 5,
   },
-  
-
 ];
 
 export default function CarOptions() {
   const [selected, setSelected] = useState<string>('');
-  
 
   return (
     <div className="w-full px-2 lg:px-0 py-4 text-center">
@@ -106,13 +102,15 @@ export default function CarOptions() {
           </h2>
         </div>
 
-        {/* Car Grid */}
+        {/* Car Grid: 1 column on mobile, 3 columns on medium and large screens */}
         <div
           className="
             grid
-            grid-cols-3
+            grid-cols-1
+            md:grid-cols-3
             gap-6
             justify-items-center
+            items-start
             mt-8
             px-4
           "
@@ -147,9 +145,7 @@ export default function CarOptions() {
                     alt="Passengers"
                     className="w-5 h-5"
                   />
-                  <span className="text-sm font-medium">
-                    Passengers
-                  </span>
+                  <span className="text-sm font-medium">Passengers</span>
                 </div>
 
                 {/* Luggage */}
@@ -159,9 +155,7 @@ export default function CarOptions() {
                     alt="Luggage"
                     className="w-5 h-5"
                   />
-                  <span className="text-sm font-medium">
-                    Luggage 
-                  </span>
+                  <span className="text-sm font-medium">Luggage</span>
                 </div>
               </div>
 
@@ -178,21 +172,20 @@ export default function CarOptions() {
               <div className="mt-4 text-black font-bold text-lg">
                 {car.name}
               </div>
+
+              {/* Book Button: shows only below the selected car */}
+              {selected === car.id && (
+                <Link
+                  href={`/booking?car=${encodeURIComponent(car.id)}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-4 inline-block bg-gradient px-10 py-3 text-[20px] text-white rounded-full"
+                >
+                  Book Now
+                </Link>
+              )}
             </div>
           ))}
         </div>
-
-        {/* Book Button */}
-        {selected && (
-          <div className="mt-10">
-            <Link
-              href="/booking"
-              className="inline-block bg-gradient px-10 py-3 text-[22px] text-white rounded-full"
-            >
-              Book Now
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   );
