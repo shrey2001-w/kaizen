@@ -12,7 +12,7 @@ const ThankYou = () => {
         before:content-[''] before:absolute before:top-0 before:left-0 
         before:w-full before:h-full before:bg-black/60
       "
-    style={{ backgroundImage: 'url("/images/hero_image.webp")' }}
+    style={{ backgroundImage: 'url("/images/hero-image.jpeg")' }}
 >
     <div className="relative text-white text-center max-w-[1000px] mx-auto px-4 w-full">
         <h1 className='text-3xl sm:text-4xl md:text-5xl font-bold mb-4'>Thank You for Your Booking!</h1>
