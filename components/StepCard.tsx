@@ -18,9 +18,12 @@ interface TaxiItemsProps {
   showTaxiItems: boolean;
   setShowTaxiItems: React.Dispatch<React.SetStateAction<boolean>>;
   texiData: TaxiItem[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   submittedData: FormData | any;
   setLoading: (isComponentLoading: boolean) => void;
 }
+
+type PaymentMethod = "cash" | "stripe";
 
 const DEFAULT_CAR_IMAGE = "/images/carImg.png";
 
@@ -84,6 +87,11 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
     phone: "",
   });
 
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [processingMethod, setProcessingMethod] = useState<PaymentMethod | null>(null);
+  const [paymentError, setPaymentError] = useState("");
+
   // Refs for scrolling
   const step1Ref = useRef<HTMLDivElement>(null);
   const step2Ref = useRef<HTMLDivElement>(null);
@@ -116,13 +124,40 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
     }
   }, [isOpen, selectedTaxi]);
 
+  const closePaymentModal = () => {
+    if (processingMethod) return; // don't close while a request is running
+    setShowPaymentModal(false);
+    setPaymentError("");
+  };
+
+  // Close the modal with Escape and lock page scroll while it is open
+  useEffect(() => {
+    if (!showPaymentModal) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !processingMethod) {
+        setShowPaymentModal(false);
+        setPaymentError("");
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showPaymentModal, processingMethod]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBookNow = async (taxi: TaxiItem) => {
-    if (!taxi || !submittedData) return;
+  // Called by "Pay with Cash" / "Pay with Stripe" buttons in the modal
+  const processBooking = async (method: PaymentMethod) => {
+    if (!selectedTaxi || !submittedData || processingMethod) return;
 
     const reservationDetails = {
       pickup: submittedData?.formattedPickUpAddress,
@@ -136,7 +171,7 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
       rideOption: submittedData?.rideOption,
       numberPassengers: submittedData?.numberPassengers,
       seatOption: submittedData?.seatOption,
-      carChoice: taxi?.carType,
+      carChoice: selectedTaxi.carType,
 
       // Passenger details
       firstName: formData.firstName,
@@ -146,10 +181,14 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
     };
 
     const checkoutPayload = {
-      price: taxi.totalPrice,
+      price: selectedTaxi.totalPrice,
       reservationDetails,
       addOns: [],
+      paymentMethod: method, // "cash" | "stripe"
     };
+
+    setPaymentError("");
+    setProcessingMethod(method);
 
     try {
       setLoading(true);
@@ -157,21 +196,35 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
         "/square/create-checkout",
         checkoutPayload
       );
-      if (response.status === 200) {
-        const checkoutUrl = response.data.url;
-        if (checkoutUrl) {
-          const popup = window.open(checkoutUrl, "_blank");
-          if (!popup || popup.closed || typeof popup.closed === "undefined") {
-            window.location.href = checkoutUrl;
-          }
+      const data = response?.data;
+
+      if (method === "stripe") {
+        if (data?.url) {
+          // Same-tab redirect: reliable on mobile and not blocked as a popup
+          window.location.href = data.url;
+          return;
         }
-      } else {
-        console.error("Checkout failed.");
+        setPaymentError("Could not start the payment. Please try again.");
+        return;
       }
+
+      // Cash: booking saved and the confirmation email was sent by the server
+      if (response.status === 200) {
+        const bookingId = data?.bookingId ? `&bookingId=${data.bookingId}` : "";
+        window.location.href = `/thank-you?method=cash${bookingId}`;
+        return;
+      }
+      setPaymentError("Could not confirm your booking. Please try again.");
     } catch (error) {
-      console.error("Error during checkout:", error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
+      console.error("Error during booking:", err?.response?.data || err);
+      setPaymentError(
+        err?.response?.data?.error || "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
+      setProcessingMethod(null);
     }
   };
 
@@ -369,11 +422,13 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
                       {selectedTaxi.carType} - {formatPrice(selectedTaxi.totalPrice)}
                     </p>
 
+                    {/* Submitting the form opens the payment-method modal */}
                     <form
                       className="flex flex-col gap-5"
                       onSubmit={(e) => {
                         e.preventDefault();
-                        handleBookNow(selectedTaxi);
+                        setPaymentError("");
+                        setShowPaymentModal(true);
                       }}
                     >
                       <div className="grid grid-cols-2 gap-4">
@@ -452,6 +507,73 @@ const TaxiItems: React.FC<TaxiItemsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* PAYMENT METHOD MODAL */}
+      {showPaymentModal && selectedTaxi && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+          onClick={closePaymentModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-modal-title"
+            aria-busy={!!processingMethod}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl sm:p-8"
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={closePaymentModal}
+              disabled={!!processingMethod}
+              className="absolute right-4 top-4 text-2xl leading-none text-gray-500 hover:text-black disabled:opacity-40"
+            >
+              &times;
+            </button>
+
+            <h3
+              id="payment-modal-title"
+              className="mb-1 text-center font-outfit text-2xl font-bold text-black"
+            >
+              Choose Payment Method
+            </h3>
+            <p className="mb-6 text-center font-outfit text-black">
+              {selectedTaxi.carType} - {formatPrice(selectedTaxi.totalPrice)}
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => processBooking("stripe")}
+                disabled={!!processingMethod}
+                className="w-full rounded-2xl bg-gradient py-4 font-outfit text-[17px] font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {processingMethod === "stripe" ? "Redirecting..." : "Pay with Stripe"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => processBooking("cash")}
+                disabled={!!processingMethod}
+                className="w-full rounded-2xl border-2 border-black bg-white py-4 font-outfit text-[17px] font-semibold text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {processingMethod === "cash" ? "Confirming..." : "Pay with Cash"}
+              </button>
+            </div>
+
+            <p className="mt-4 text-center font-outfit text-sm text-gray-600">
+              Cash: pay the driver at pick-up. A confirmation email is sent right away.
+            </p>
+
+            {paymentError && (
+              <p role="alert" className="mt-3 text-center font-outfit text-sm font-medium text-red-600">
+                {paymentError}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

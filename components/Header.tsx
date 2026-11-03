@@ -52,24 +52,25 @@ const Navbar = () => {
     };
   }, []);
 
-  // The bar gets a light background once scrolled or while the mobile menu is open,
-  // so dark text/icons are used in those states.
-  const isLightBar = isScrolled || isOpen;
+  // The bar never turns white. Once scrolled (or while the mobile menu is open)
+  // it becomes a translucent deep-blue glass, so white text/icons always stay readable.
+  const showBarBg = isScrolled || isOpen;
 
-  // Mobile menu panel is always white, so mobile links are always dark.
-  // On desktop (lg), links are white over the hero and dark once scrolled.
-  const linkClass = `block w-full py-3 lg:py-0 text-lg lg:text-[20px] font-medium transition-colors duration-150 hover:text-[#1B5B97] focus-visible:text-[#1B5B97] focus:outline-none ${
-    isScrolled ? "text-black" : "text-gray-900 lg:text-white"
-  }`;
+  // Mobile menu panel is white, so mobile links are dark.
+  // On desktop (lg) the links are always white (transparent hero bar or blue glass bar).
+  const linkClass =
+    "block w-full py-3 lg:py-0 text-lg lg:text-[20px] font-medium text-gray-900 lg:text-white transition-colors duration-150 hover:text-[#1B5B97] lg:hover:text-[#7FC0F5] focus-visible:text-[#1B5B97] lg:focus-visible:text-[#7FC0F5] focus:outline-none";
 
+  // Book button: larger, brand-blue gradient, soft shadow, hover lift, press feedback,
+  // big touch target on mobile, auto width on desktop.
   const buttonClass =
-    "block w-full lg:w-auto text-center text-lg lg:text-[22px] font-outfit font-medium rounded-full px-7 py-2.5 lg:py-1.5 bg-gradient text-white transition-opacity duration-300 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5B97] focus-visible:ring-offset-2";
+    "group inline-flex w-full lg:w-auto items-center justify-center gap-2.5 whitespace-nowrap rounded-full px-8 py-4 lg:px-9 lg:py-3.5 text-lg lg:text-xl xl:text-[22px] font-outfit font-semibold tracking-wide text-white bg-gradient-to-r from-[#1B5B97] to-[#2A7BC4] border border-white/20 shadow-lg shadow-[#1B5B97]/40 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#1B5B97]/50 hover:brightness-110 active:translate-y-0 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7FC0F5] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent";
 
   return (
     <nav
       className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${
-        isLightBar
-          ? "bg-white/95 shadow-md backdrop-blur-md lg:bg-white/90"
+        showBarBg
+          ? "bg-[#0F3A63]/85 shadow-lg backdrop-blur-md"
           : "bg-transparent"
       }`}
     >
@@ -93,14 +94,12 @@ const Navbar = () => {
 
           {/* Mobile / tablet controls */}
           <div className="flex items-center gap-3 sm:gap-4 lg:hidden">
-            <GoogleTranslate isScrolled={isLightBar} />
+            <GoogleTranslate isScrolled={false} />
 
             <button
               type="button"
               onClick={toggleMenu}
-              className={`-mr-2 flex h-11 w-11 items-center justify-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5B97] ${
-                isLightBar ? "text-black" : "text-white"
-              }`}
+              className="-mr-2 flex h-11 w-11 items-center justify-center rounded-md text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7FC0F5]"
               aria-label={isOpen ? "Close menu" : "Open menu"}
               aria-expanded={isOpen}
               aria-controls="main-navigation"
@@ -160,12 +159,25 @@ const Navbar = () => {
 
             {/* Desktop only: language selector */}
             <div className="hidden lg:flex lg:items-center">
-              <GoogleTranslate isScrolled={isScrolled} />
+              <GoogleTranslate isScrolled={false} />
             </div>
 
+            {/* Book button */}
             <div className="pb-2 pt-4 lg:p-0">
               <Link href="/booking" className={buttonClass} onClick={closeMenu}>
-                Book
+                <span>Book Now</span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transform-none"
+                >
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
               </Link>
             </div>
           </div>

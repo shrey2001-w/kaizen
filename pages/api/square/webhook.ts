@@ -1,49 +1,48 @@
-// pages/api/stripe/webhook.ts
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import { squareWebhookHandler } from "../../../server/controllers/stripeController";
+import { stripeWebhookHandler } from "../../../server/controllers/stripeController";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const dbModule = require("../../../server/db");
+const connectDB = dbModule?.default || dbModule?.connectDB || dbModule;
 
+// Stripe verifies the signature against the exact raw bytes,
+// so Next.js must NOT parse the body.
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const readRawBody = (req: NextApiRequest): Promise<Buffer> =>
+  new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk) =>
+      chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk)
+    );
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    // Read the raw body from the request
-    const buf = await getRawBody(req);
-    // Attach rawBody to req so that your controller can access it.
-    (req as any).rawBody = buf.toString("utf8");
-    console.log("Raw body received:", (req as any).rawBody);
-    return await squareWebhookHandler(req, res);
-  } catch (error: any) {
-    console.error("Webhook Error:", error.message);
-    return res.status(400).send(`Webhook Error: ${error.message}`);
+    if (typeof connectDB === "function") {
+      await connectDB();
+    }
+
+    // The controller expects req.body to be the raw Buffer
+    const rawBody = await readRawBody(req);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (req as any).body = rawBody;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await stripeWebhookHandler(req as any, res as any);
+  } catch (error) {
+    console.error("Stripe webhook route error:", error);
+    return res.status(500).json({ error: "Webhook route failed" });
   }
 }
-
-// Helper function to read the raw body as a Buffer.
-const getRawBody = async (req: NextApiRequest): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    const chunks: Uint8Array[] = [];
-    req.on("data", (chunk) => {
-      chunks.push(chunk);
-    });
-    req.on("end", () => {
-      resolve(Buffer.concat(chunks));
-    });
-    req.on("error", (err) => {
-      reject(err);
-    });
-  });
-};

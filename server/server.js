@@ -15,22 +15,15 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const bodyParser = require("body-parser");
-
 app.use(cors());
 
-// Middleware to capture raw body for Stripe webhooks
-app.use(
-  bodyParser.json({
-    verify: (req, res, buf) => {
-      if (req.originalUrl === "/api/webhook") {
-        req.rawBody = buf.toString(); // Capture raw body for Stripe
-      }
-    },
-  })
-);
+// Stripe verifies the signature against the exact raw bytes of the request,
+// so this MUST be registered BEFORE express.json().
+// (stripeRoutes also applies express.raw on this route; this line makes the
+// order explicit and safe.)
+app.use("/api/webhook", express.raw({ type: "application/json" }));
 
-// Middleware for parsing JSON requests for other routes
+// JSON parser for every other route
 app.use(express.json());
 
 // API Routes
@@ -38,6 +31,7 @@ app.use("/api/rides", ridesRoutes);
 app.use("/api/theme-settings", themeSettingsRoutes);
 app.use("/api/vehicles", vehiclesRoutes);
 app.use("/api/prices", priceCalculation);
+// Exposes: POST /api/create-checkout and POST /api/webhook
 app.use("/api", stripeRoutes);
 
 // Start server

@@ -67,12 +67,12 @@ const Footer = () => {
             </a>
           </div> */}
 
-          <ul className="flex flex-wrap items-center justify-center mt-3 text-sm font-semibold color--blue sm:mt-0">
+          <ul className="flex flex-wrap items-center justify-center mt-3 text-base md:text-xl font-semibold color--blue sm:mt-0">
             <li>
-              <Link href="/terms" className="transition-colors duration-300 ease-in-out me-4 md:me-10 text-gradient text-24px font-bold text-gradient-underline">Terms and Conditions</Link>
+              <Link href="/terms" className="transition-colors duration-300 ease-in-out me-4 md:me-10 text-gradient font-bold text-gradient-underline">Terms and Conditions</Link>
             </li>
             <li>
-              <Link href="/privacy" className="transition-colors duration-300 ease-in-out text-24px font-bold text-gradient-underline text-gradient">Privacy Policy</Link>
+              <Link href="/privacy" className="transition-colors duration-300 ease-in-out font-bold text-gradient-underline text-gradient">Privacy Policy</Link>
             </li>
           </ul>
           <div>
