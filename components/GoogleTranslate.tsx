@@ -6,6 +6,7 @@ import { Languages, ChevronDown, Check } from "lucide-react";
 declare global {
   interface Window {
     googleTranslateElementInit: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     google: any;
   }
 }
@@ -31,6 +32,55 @@ const getLangFromCookie = (): string => {
   return parts?.[2] || "en";
 };
 
+/**
+ * Remove googtrans from every place it could have been stored:
+ * host-only, exact host, and the parent domain (with and without leading dot).
+ */
+const clearGoogTransCookies = () => {
+  const expire = "Thu, 01 Jan 1970 00:00:00 UTC";
+  const hostname = window.location.hostname;
+  const rootDomain = hostname.split(".").slice(-2).join(".");
+
+  const domains = new Set<string | null>([
+    null, // host-only cookie (no domain attribute)
+    hostname,
+    `.${hostname}`,
+    rootDomain,
+    `.${rootDomain}`,
+  ]);
+
+  domains.forEach((domain) => {
+    document.cookie =
+      `googtrans=; expires=${expire}; path=/;` + (domain ? ` domain=${domain};` : "");
+  });
+};
+
+/**
+ * Google Translate rewrites text nodes, which makes React crash with
+ * "Failed to execute 'removeChild' on 'Node'" in production.
+ * This makes those two DOM calls tolerant. Applied once.
+ */
+const patchDomForTranslate = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  if (w.__gtDomPatched) return;
+  w.__gtDomPatched = true;
+
+  const originalRemoveChild = Node.prototype.removeChild;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Node.prototype as any).removeChild = function (child: Node) {
+    if (child.parentNode !== this) return child;
+    return originalRemoveChild.call(this, child);
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Node.prototype as any).insertBefore = function (newNode: Node, refNode: Node | null) {
+    if (refNode && refNode.parentNode !== this) return newNode;
+    return originalInsertBefore.call(this, newNode, refNode);
+  };
+};
+
 const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
   const [isOpen, setIsOpen] = useState(false);
   // Always "EN" on server — cookie read happens only in useEffect after hydration
@@ -39,6 +89,9 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Step 0: keep React from crashing once Google rewrites the DOM
+    patchDomForTranslate();
+
     // Step 1: Read cookie AFTER hydration to avoid server/client mismatch
     const code = getLangFromCookie();
     const short = languages.find((l) => l.code === code)?.short ?? "EN";
@@ -55,7 +108,7 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
       document.body.appendChild(container);
     }
 
-    // Step 3: Load script once
+    // Step 3: Load script once (always https, never protocol-relative)
     if (!document.getElementById("google-translate-script")) {
       window.googleTranslateElementInit = () => {
         new window.google.translate.TranslateElement(
@@ -72,8 +125,12 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
       const script = document.createElement("script");
       script.id = "google-translate-script";
       script.src =
-        "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
       script.async = true;
+      script.onerror = () =>
+        console.error(
+          "Google Translate script failed to load (blocked by CSP, an ad blocker or the network)."
+        );
       document.body.appendChild(script);
     }
 
@@ -82,8 +139,10 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
       const style = document.createElement("style");
       style.id = "gt-global-suppress";
       style.innerHTML = `
-        .goog-te-banner-frame { display: none !important; }
+        .goog-te-banner-frame, .skiptranslate > iframe { display: none !important; }
         body { top: 0px !important; }
+        #goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
+        .goog-text-highlight { background: none !important; box-shadow: none !important; }
         .gt-trigger-btn:hover { border-color: #c2c2c2 !important; }
         .gt-lang-item:hover { background: var(--gt-hover-bg) !important; }
       `;
@@ -108,30 +167,31 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
   }, []);
 
   const handleLanguageSelect = (code: string, short: string) => {
-    const hostname = window.location.hostname;
-    const rootDomain = hostname.split(".").slice(-2).join(".");
+    // 1️⃣ Clear every possible googtrans cookie first
+    clearGoogTransCookies();
 
-    // 1️⃣ Clear ALL possible googtrans cookies first
-    const expire = "Thu, 01 Jan 1970 00:00:00 UTC";
-
-    // no domain
-    document.cookie = `googtrans=; expires=${expire}; path=/;`;
-
-    // current domain
-    document.cookie = `googtrans=; expires=${expire}; path=/; domain=${hostname};`;
-
-    // root domain
-    document.cookie = `googtrans=; expires=${expire}; path=/; domain=.${rootDomain};`;
-
-    // 2️⃣ If English → just reload (no cookie needed)
+    // 2️⃣ English: no cookie needed, reload to restore the original page
     if (code === "en") {
       window.location.reload();
       return;
     }
 
-    // 3️⃣ Set fresh cookie consistently on root domain
-    document.cookie = `googtrans=/en/${code}; path=/; domain=.${rootDomain};`;
+    // 3️⃣ Host-only cookie (no `domain` attribute). This works on every host,
+    //    including *.vercel.app / *.onrender.com / *.co.in, where setting a
+    //    cookie on the "root domain" is rejected by the browser.
+    document.cookie = `googtrans=/en/${code}; path=/; SameSite=Lax`;
 
+    // 4️⃣ Prefer switching live through Google's hidden dropdown (no reload)
+    const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
+    if (combo) {
+      combo.value = code;
+      combo.dispatchEvent(new Event("change"));
+      setCurrentLang(short);
+      setIsOpen(false);
+      return;
+    }
+
+    // 5️⃣ Widget not ready yet: the cookie is set, so a reload applies it
     window.location.reload();
   };
 
@@ -187,8 +247,8 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
           style={{ pointerEvents: "none", flexShrink: 0 }}
           aria-hidden="true"
         />
-        {/* suppressHydrationWarning lets React skip the EN→ES/HI mismatch warning */}
-        <span style={{ pointerEvents: "none" }} suppressHydrationWarning>
+        {/* translate="no" stops Google from rewriting this label itself */}
+        <span style={{ pointerEvents: "none" }} translate="no" suppressHydrationWarning>
           {currentLang}
         </span>
         <ChevronDown
@@ -209,6 +269,7 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
         <div
           role="listbox"
           aria-label="Language options"
+          translate="no"
           style={{
             position: "absolute",
             top: "calc(100% + 8px)",
@@ -220,6 +281,7 @@ const GoogleTranslate = ({ isScrolled = false }: GoogleTranslateProps) => {
             boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
             overflow: "hidden",
             zIndex: 9999,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ["--gt-hover-bg" as any]: hoverBg,
           }}
         >
