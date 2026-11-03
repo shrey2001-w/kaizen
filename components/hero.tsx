@@ -12,7 +12,7 @@ const RideChoiceSection = () => {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <Image
-          src='/images/herobg.jpg'
+          src='/images/new.png'
           fill
           alt='Airport Background'
           className="object-cover"
